@@ -1,11 +1,16 @@
 """Build one OSC 7501 report. This module does not write to a terminal."""
 
+import base64
 import re
+import unicodedata
 from enum import StrEnum
 
 _APP = re.compile(r"[A-Za-z0-9_.+-]{1,32}")
 _ID_BYTES = 128
 _ID_SEGMENTS = 8
+_MSG_BYTES = 2048
+_TITLE_BYTES = 192
+_SEQUENCE_BYTES = 4096
 
 
 class State(StrEnum):
@@ -26,6 +31,8 @@ class Kind(StrEnum):
 def encode(
     state: str,
     *,
+    msg: str | None = None,
+    title: str | None = None,
     app: str | None = None,
     id: str | None = None,
     kind: str | None = None,
@@ -35,13 +42,18 @@ def encode(
 
     ``re.fullmatch`` is required for ``app`` and each ``id`` segment.
     ``re.match`` with ``$`` also matches before a trailing newline.
+
+    Control characters in ``msg`` and ``title`` are replaced with a space.
+    A terminal discards the whole report when those fields decode to a control.
     """
     try:
         parsed = State(state)
     except ValueError:
         raise ValueError(f"unknown state: {state!r}") from None
 
-    if parsed is State.CLEAR and any(value is not None for value in (app, kind, progress)):
+    if parsed is State.CLEAR and any(
+        value is not None for value in (msg, title, app, kind, progress)
+    ):
         raise ValueError("clear accepts only id")
 
     parsed_kind: Kind | None = None
@@ -74,7 +86,15 @@ def encode(
         pairs.append(f"progress={progress}")
     if app is not None:
         pairs.append(f"app={app}")
-    return f"\x1b]7501;{':'.join(pairs)}\x1b\\"
+    if title is not None and (encoded := _text(title, _TITLE_BYTES)) is not None:
+        pairs.append(f"title={encoded}")
+    if msg is not None and (encoded := _text(msg, _MSG_BYTES)) is not None:
+        pairs.append(f"msg={encoded}")
+
+    sequence = f"\x1b]7501;{':'.join(pairs)}\x1b\\"
+    if len(sequence.encode("ascii")) > _SEQUENCE_BYTES:
+        raise ValueError("sequence longer than 4096 bytes")
+    return sequence
 
 
 def _check_id(record_id: str) -> None:
@@ -86,3 +106,13 @@ def _check_id(record_id: str) -> None:
     for segment in segments:
         if _APP.fullmatch(segment) is None:
             raise ValueError(f"invalid id segment: {segment!r}")
+
+
+def _text(text: str, limit: int) -> str | None:
+    cleaned = "".join(" " if unicodedata.category(char) == "Cc" else char for char in text)
+    raw = cleaned.encode("utf-8", errors="replace")
+    if len(raw) > limit:
+        raw = raw[:limit].decode("utf-8", errors="ignore").encode("utf-8")
+    if not raw:
+        return None
+    return base64.b64encode(raw).decode("ascii")
