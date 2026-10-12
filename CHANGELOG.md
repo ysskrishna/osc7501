@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2]
+
+### Changed
+
+- GitHub releases no longer attach the wheel, the sdist, or the attestation files. Install from PyPI. GitHub still attaches the source zip and tar.gz for the tag
+- The README opener no longer mentions osc-status. The credit stays in the acknowledgments
+- The probe is described as asking whether the terminal supports OSC 7501
+- The job example states that `working()` writes before the `with` block
+- Terminal names are no longer listed. The README links to the awesome-osc7501 matrix and notes that this library does not wrap reports for tmux
+
 ## [1.0.1]
 
 ### Fixed
@@ -24,5 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Zero runtime dependencies
 - Python 3.11+
 
+[1.0.2]: https://github.com/ysskrishna/osc7501/releases/tag/v1.0.2
 [1.0.1]: https://github.com/ysskrishna/osc7501/releases/tag/v1.0.1
 [1.0.0]: https://github.com/ysskrishna/osc7501/releases/tag/v1.0.0
