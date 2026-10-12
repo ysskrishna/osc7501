@@ -5,6 +5,11 @@ import pytest
 from osc7501 import Kind, State, encode
 
 
+@pytest.mark.parametrize("state", ["idle", "working", "done", "blocked", "error", "clear"])
+def test_each_state_is_a_state_only_sequence(state: str) -> None:
+    assert encode(state) == f"\x1b]7501;state={state}\x1b\\"
+
+
 def test_working_is_the_state_only_sequence() -> None:
     assert encode("working") == "\x1b]7501;state=working\x1b\\"
     assert encode(State.WORKING) == "\x1b]7501;state=working\x1b\\"
@@ -44,6 +49,14 @@ def test_progress_is_emitted_for_working() -> None:
         {"state": "working", "id": "a/"},
         {"state": "working", "id": "/".join(["a"] * 9)},
         {"state": "working", "id": "a" * 129},
+        {"state": "working", "id": "a" * 33},
+        {"state": "working", "id": "with space"},
+        {"state": "working", "id": "x;y"},
+        {"state": "working", "id": "x:y"},
+        {"state": "working", "id": "東京"},
+        {"state": "working", "id": "/".join(["a" * 32] * 4)},
+        {"state": "working", "progress": float("nan")},
+        {"state": "working", "progress": float("inf")},
         {"state": "clear", "app": "make"},
         {"state": "clear", "progress": 1},
         {"state": "clear", "kind": "question"},
@@ -60,6 +73,25 @@ def test_invalid_identity_raises(kwargs: dict[str, object]) -> None:
 def test_newline_in_app_does_not_match_the_end_anchor() -> None:
     with pytest.raises(ValueError):
         encode("working", app="make\n")
+
+
+def test_clear_with_an_id_addresses_that_record() -> None:
+    assert encode("clear", id="build/test") == "\x1b]7501;state=clear:id=build/test\x1b\\"
+
+
+def test_terraform_approval_example() -> None:
+    message = "Apply 3 to add, 1 to change, 0 to destroy?"
+    sequence = encode("blocked", kind="permission", app="terraform", msg=message)
+    assert sequence == (
+        "\x1b]7501;state=blocked:kind=permission:app=terraform:"
+        "msg=QXBwbHkgMyB0byBhZGQsIDEgdG8gY2hhbmdlLCAwIHRvIGRlc3Ryb3k/\x1b\\"
+    )
+    assert _decoded_fields(sequence)[0] == message
+
+
+def test_c1_controls_in_text_become_spaces() -> None:
+    sequence = encode("working", msg="a\x85b\x9fc")
+    assert _decoded_fields(sequence)[0] == "a b c"
 
 
 def test_msg_and_title_are_base64() -> None:

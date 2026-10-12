@@ -197,10 +197,11 @@ class Job:
             kind=kind,
             progress=progress,
         )
-        self._last_state = State(state)
         if sequence == self._last_bytes:
             return False
         wrote = _write(sequence, self._stream, self._enabled)
+        # A raised write stops above, so a failed report does not count as sent.
+        self._last_state = State(state)
         if wrote:
             self._last_bytes = sequence
         return wrote
@@ -450,7 +451,12 @@ class _ReplyReader:
         if overflow or self._result is not Detection.UNKNOWN or not body.startswith(_REPLY_PREFIX):
             return
         self._result = Detection.SUPPORTED
-        self.reply = "\x1b]" + body.decode("ascii") + terminator.decode("ascii")
+        try:
+            text = body.decode("ascii")
+        except UnicodeDecodeError:
+            self.reply = None
+            return
+        self.reply = "\x1b]" + text + terminator.decode("ascii")
 
 
 def _write(sequence: str, stream: Any, enabled: bool | None) -> bool:

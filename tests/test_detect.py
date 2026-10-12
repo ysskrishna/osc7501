@@ -1,7 +1,7 @@
 import pytest
 
 from osc7501 import Detection, detect, parse_reply, query
-from osc7501.terminal import _ReplyReader
+from osc7501.terminal import _ReplyReader, _support_from
 
 _DA1 = b"\x1b[?62;22;52c"
 _REPLY_ST = b"\x1b]7501;?\x1b\\"
@@ -28,6 +28,7 @@ _CASES = [
     ("nothing", b"", Detection.UNKNOWN, False),
     ("ESC restarts OSC", b"\x1b]7501\x1b]7501;?\x07" + _DA1, Detection.SUPPORTED, True),
     ("CAN cancels", b"\x1b]7501;?\x18\x07" + _DA1, Detection.UNSUPPORTED, True),
+    ("SUB cancels", b"\x1b]7501;?\x1a\x07" + _DA1, Detection.UNSUPPORTED, True),
     ("minimal DA1", b"\x1b[?c", Detection.UNSUPPORTED, True),
     ("input after done ignored", _DA1 + _REPLY_ST, Detection.UNSUPPORTED, True),
 ]
@@ -79,6 +80,17 @@ def test_detect_without_a_tty(monkeypatch: pytest.MonkeyPatch) -> None:
     assert found.supported is False
     assert found.states == frozenset()
     assert found.kinds == frozenset()
+
+
+def test_non_ascii_reply_stays_supported() -> None:
+    reader = _ReplyReader()
+    result, done = reader.feed(b"\x1b]7501;?\xff\x1b\\" + _DA1)
+    assert (result, done) == (Detection.SUPPORTED, True)
+    assert reader.reply is None
+    support = _support_from(reader)
+    assert support.result is Detection.SUPPORTED
+    assert support.states == frozenset({"idle", "working", "done", "blocked", "error"})
+    assert support.kinds == frozenset({"permission", "question", "auth"})
 
 
 def test_parse_reply_rejects_da1_and_a_report() -> None:
