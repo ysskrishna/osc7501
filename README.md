@@ -14,7 +14,7 @@ Report terminal program status with OSC 7501.
 - **States**: `idle`, `working`, `done`, `blocked`, `error`, and `clear`
 - **One job**: a context manager that repeats `app`, `id`, and `title` and closes the job for you
 - **Safe text**: control characters become spaces before base64, so one newline cannot drop the report
-- **Optional probe**: ask the terminal whether it implements revision 0.4
+- **Optional probe**: ask the terminal whether it supports OSC 7501
 - **Zero dependencies**: the library only uses the Python standard library
 - **TTY gate**: reports are skipped when stderr is a pipe, unless you pass `enabled=True`
 
@@ -58,7 +58,7 @@ with working(app="make", msg="Building docs") as job:
     job.done(msg="Docs built")
 ```
 
-Enter writes `working`. A clean exit writes `done` with no message. An exception writes `error`. `KeyboardInterrupt` writes `idle`. If you already called `job.done()` or `job.error()`, the exit writes nothing.
+`working()` writes `working` when you call it, before the `with` block. Enter writes nothing more. A clean exit writes `done` with no message. An exception writes `error`. `KeyboardInterrupt` writes `idle`. If you already called `job.done()` or `job.error()`, the exit writes nothing.
 
 `msg` for `kind="auth"` is the prompt, never the secret.
 
@@ -74,11 +74,7 @@ Call `detect()` before reading input. It can consume keystrokes typed during the
 
 ## Where reports show up
 
-This list is from the [awesome-osc7501 matrix](https://github.com/hyeebeen/awesome-osc7501) dated 2026-10-11. It was not re-checked for this release.
-
-Shows reports: Rex, TUIOS, termio, SwiftTerm, Termy, con-terminal, phux, thurm, wietty, Prowl.
-
-Ignores reports: the Ghostty app (libghostty parses them; the app does not opt in), tmux (drops them unless DCS passthrough and `allow-passthrough` are on; this release does not wrap them), Kitty, WezTerm, Alacritty, iTerm2, Windows Terminal, VS Code, Zed, Warp, zellij.
+Which terminals show a report is tracked in the [awesome-osc7501 matrix](https://github.com/hyeebeen/awesome-osc7501). This library does not wrap reports for tmux.
 
 ## API Reference
 
