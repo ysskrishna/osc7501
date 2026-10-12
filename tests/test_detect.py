@@ -1,6 +1,6 @@
 import pytest
 
-from osc7501 import Detection, parse_reply, query
+from osc7501 import Detection, detect, parse_reply, query
 from osc7501.terminal import _ReplyReader
 
 _DA1 = b"\x1b[?62;22;52c"
@@ -67,6 +67,18 @@ def test_a_repeated_key_keeps_the_last_value() -> None:
     parsed = parse_reply("\x1b]7501;?:states=idle:states=working\x1b\\")
     assert parsed is not None
     assert parsed.states == frozenset({"working"})
+
+
+def test_detect_without_a_tty(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _open(*_args: object, **_kwargs: object) -> int:
+        raise OSError("no tty")
+
+    monkeypatch.setattr("osc7501.terminal.os.open", _open)
+    found = detect(timeout=0.01)
+    assert found.result is Detection.UNKNOWN
+    assert found.supported is False
+    assert found.states == frozenset()
+    assert found.kinds == frozenset()
 
 
 def test_parse_reply_rejects_da1_and_a_report() -> None:

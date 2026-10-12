@@ -1,7 +1,9 @@
 """Write an OSC 7501 report to a terminal, and read a support reply."""
 
+import os
 import sys
 import threading
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import IO, Any
@@ -247,6 +249,72 @@ class Support:
     @property
     def supported(self) -> bool:
         return self.result is Detection.SUPPORTED
+
+
+def detect(*, timeout: float = 0.2) -> Support:
+    """Ask ``/dev/tty`` whether it supports OSC 7501.
+
+    Call this before reading input. Keystrokes typed during the wait can be
+    consumed, and a reply that arrives after the timeout can leak into later
+    input. Emit paths never call this.
+    """
+    try:
+        import select
+        import termios
+    except ImportError:
+        return _unknown()
+    try:
+        fd = os.open("/dev/tty", os.O_RDWR | os.O_NOCTTY)
+    except OSError:
+        return _unknown()
+    try:
+        try:
+            old = termios.tcgetattr(fd)
+        except termios.error:
+            return _unknown()
+        new = [old[0], old[1], old[2], old[3], old[4], old[5], list(old[6])]
+        new[3] &= ~(termios.ICANON | termios.ECHO | termios.ISIG | termios.IEXTEN)
+        new[0] &= ~(termios.IXON | termios.ICRNL)
+        new[6][termios.VMIN] = 0
+        new[6][termios.VTIME] = 1
+        termios.tcsetattr(fd, termios.TCSANOW, new)
+        try:
+            os.write(fd, query().encode("ascii"))
+            os.write(fd, b"\x1b[c")
+            reader = _ReplyReader()
+            deadline = time.monotonic() + timeout
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                ready, _, _ = select.select([fd], [], [], remaining)
+                if not ready:
+                    break
+                chunk = os.read(fd, 256)
+                if not chunk:
+                    break
+                reader.feed(chunk)
+                if reader._done:
+                    break
+            return _support_from(reader)
+        finally:
+            termios.tcsetattr(fd, termios.TCSANOW, old)
+    finally:
+        os.close(fd)
+
+
+def _unknown() -> Support:
+    return Support(Detection.UNKNOWN, frozenset(), frozenset())
+
+
+def _support_from(reader: "_ReplyReader") -> Support:
+    if reader._result is Detection.SUPPORTED and reader.reply is not None:
+        parsed = parse_reply(reader.reply)
+        if parsed is not None:
+            return parsed
+    if reader._result is Detection.SUPPORTED:
+        return Support(Detection.SUPPORTED, _DEFAULT_STATES, _DEFAULT_KINDS)
+    return Support(reader._result, frozenset(), frozenset())
 
 
 def query() -> str:
