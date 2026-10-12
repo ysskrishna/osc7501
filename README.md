@@ -7,7 +7,7 @@
 [![PyPI](https://img.shields.io/pypi/v/osc7501)](https://pypi.org/project/osc7501/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/osc7501?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREY&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/osc7501)
 
-Report terminal program status with OSC 7501. Inspired by the [osc-status](https://github.com/jonahsnider/osc-status) npm package.
+Report terminal program status with OSC 7501.
 
 ## Features
 
