@@ -1,10 +1,24 @@
-"""Write an OSC 7501 report to a terminal."""
+"""Write an OSC 7501 report to a terminal, and read a support reply."""
 
 import sys
 import threading
+from dataclasses import dataclass
+from enum import Enum
 from typing import IO, Any
 
-from osc7501.encode import State, encode
+from osc7501.encode import Kind, State, encode
+
+_ESC = 0x1B
+_BEL = 0x07
+_CAN = 0x18
+_SUB = 0x1A
+_GROUND = "ground"
+_ESCAPE = "esc"
+_OSC = "osc"
+_OSC_ESC = "osc-esc"
+_CSI = "csi"
+_REPLY_PREFIX = b"7501;?"
+_BODY_LIMIT = 4096
 
 _lock = threading.Lock()
 
@@ -212,6 +226,163 @@ def _send(
         progress=progress,
     )
     return _write(sequence, sys.stderr if stream is None else stream, enabled)
+
+
+class Detection(Enum):
+    SUPPORTED = "supported"
+    UNSUPPORTED = "unsupported"
+    UNKNOWN = "unknown"
+
+
+_DEFAULT_STATES = frozenset(state.value for state in State if state is not State.CLEAR)
+_DEFAULT_KINDS = frozenset(kind.value for kind in Kind)
+
+
+@dataclass(frozen=True)
+class Support:
+    result: Detection
+    states: frozenset[str]
+    kinds: frozenset[str]
+
+    @property
+    def supported(self) -> bool:
+        return self.result is Detection.SUPPORTED
+
+
+def query() -> str:
+    """The feature-detection query, ``OSC 7501 ; ? ST``."""
+    return "\x1b]7501;?\x1b\\"
+
+
+def parse_reply(sequence: str) -> Support | None:
+    """Parse one support reply. Anything else, including DA1, returns ``None``."""
+    if sequence.endswith("\x1b\\"):
+        body = sequence[: -2]
+    elif sequence.endswith("\x07"):
+        body = sequence[: -1]
+    else:
+        return None
+    if not body.startswith("\x1b]7501;?"):
+        return None
+    rest = body[len("\x1b]7501;?") :]
+    if rest.startswith(":"):
+        rest = rest[1:]
+    elif rest != "":
+        return None
+
+    states: frozenset[str] | None = None
+    kinds: frozenset[str] | None = None
+    for pair in rest.split(":") if rest else ():
+        if "=" not in pair:
+            continue
+        key, value = pair.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if key == "states":
+            states = _csv(value)
+        elif key == "kinds":
+            kinds = _csv(value)
+    return Support(
+        result=Detection.SUPPORTED,
+        states=_DEFAULT_STATES if states is None else states,
+        kinds=_DEFAULT_KINDS if kinds is None else kinds,
+    )
+
+
+def _csv(value: str) -> frozenset[str]:
+    return frozenset(part.strip() for part in value.split(",") if part.strip())
+
+
+class _ReplyReader:
+    """Streaming scan for a 7501 support reply and the following DA1 reply.
+
+    DA1 is a CSI whose first parameter byte is ``?`` and whose final byte is ``c``.
+    OSC ends on BEL or ST. CAN and SUB cancel. ESC restarts a sequence.
+    """
+
+    def __init__(self) -> None:
+        self._state = _GROUND
+        self._buf = bytearray()
+        self._overflow = False
+        self._csi_first = 0
+        self._result = Detection.UNKNOWN
+        self._done = False
+        self.reply: str | None = None
+
+    def feed(self, data: bytes) -> tuple[Detection, bool]:
+        for byte in data:
+            if self._done:
+                break
+            self._feed_byte(byte)
+        return self._result, self._done
+
+    def _feed_byte(self, byte: int) -> None:
+        if self._state == _GROUND:
+            if byte == _ESC:
+                self._state = _ESCAPE
+            return
+        if self._state == _ESCAPE:
+            self._after_esc(byte)
+            return
+        if self._state == _OSC:
+            if byte == _BEL:
+                self._end_osc(b"\x07")
+            elif byte == _ESC:
+                self._state = _OSC_ESC
+            elif byte in (_CAN, _SUB):
+                self._state = _GROUND
+                self._buf.clear()
+                self._overflow = False
+            elif len(self._buf) < _BODY_LIMIT:
+                self._buf.append(byte)
+            else:
+                self._overflow = True
+            return
+        if self._state == _OSC_ESC:
+            if byte == ord("\\"):
+                self._end_osc(b"\x1b\\")
+            else:
+                self._after_esc(byte)
+            return
+        if byte == _ESC:
+            self._state = _ESCAPE
+        elif byte in (_CAN, _SUB):
+            self._state = _GROUND
+        elif 0x40 <= byte <= 0x7E:
+            if byte == ord("c") and self._csi_first == ord("?"):
+                if self._result is Detection.UNKNOWN:
+                    self._result = Detection.UNSUPPORTED
+                self._done = True
+            self._state = _GROUND
+        elif 0x20 <= byte <= 0x3F:
+            if self._csi_first == 0:
+                self._csi_first = byte
+        else:
+            self._state = _GROUND
+
+    def _after_esc(self, byte: int) -> None:
+        if byte == ord("]"):
+            self._buf.clear()
+            self._overflow = False
+            self._state = _OSC
+        elif byte == ord("["):
+            self._csi_first = 0
+            self._state = _CSI
+        elif byte == _ESC:
+            self._state = _ESCAPE
+        else:
+            self._state = _GROUND
+
+    def _end_osc(self, terminator: bytes) -> None:
+        self._state = _GROUND
+        body = bytes(self._buf)
+        self._buf.clear()
+        overflow = self._overflow
+        self._overflow = False
+        if overflow or self._result is not Detection.UNKNOWN or not body.startswith(_REPLY_PREFIX):
+            return
+        self._result = Detection.SUPPORTED
+        self.reply = "\x1b]" + body.decode("ascii") + terminator.decode("ascii")
 
 
 def _write(sequence: str, stream: Any, enabled: bool | None) -> bool:
