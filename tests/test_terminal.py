@@ -126,6 +126,44 @@ def test_exit_mapping(exc: BaseException | None, state: str) -> None:
     assert len(stream.buf) == 2
 
 
+class _FailOnCall:
+    def __init__(self, call: int) -> None:
+        self.call = call
+        self.n = 0
+        self.buf: list[str] = []
+
+    def write(self, data: str) -> int:
+        self.n += 1
+        if self.n == self.call:
+            raise OSError("closed")
+        self.buf.append(data)
+        return len(data)
+
+    def isatty(self) -> bool:
+        return True
+
+    def flush(self) -> None:
+        return None
+
+
+def test_a_failed_write_does_not_count_as_sent() -> None:
+    stream = _FailOnCall(2)
+    job = working(msg="a", stream=stream, enabled=True)
+    with pytest.raises(OSError, match="closed"):
+        job.done(msg="b")
+    assert job._last_state is State.WORKING
+    assert job.done(msg="b") is True
+    assert stream.buf == [encode("working", msg="a"), encode("done", msg="b")]
+
+
+def test_a_failed_done_inside_with_still_writes_the_exit_report() -> None:
+    stream = _FailOnCall(2)
+    with pytest.raises(OSError, match="closed"):
+        with working(app="make", stream=stream, enabled=True) as job:
+            job.done(msg="built")
+    assert stream.buf[-1] == encode("error", app="make")
+
+
 def test_disabled_exit_still_records_the_final_state() -> None:
     stream = _Stream(tty=False)
     with working(app="make", stream=stream) as job:

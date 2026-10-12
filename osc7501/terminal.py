@@ -197,10 +197,11 @@ class Job:
             kind=kind,
             progress=progress,
         )
-        self._last_state = State(state)
         if sequence == self._last_bytes:
             return False
         wrote = _write(sequence, self._stream, self._enabled)
+        # A raised write stops above, so a failed report does not count as sent.
+        self._last_state = State(state)
         if wrote:
             self._last_bytes = sequence
         return wrote
