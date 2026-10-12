@@ -451,7 +451,12 @@ class _ReplyReader:
         if overflow or self._result is not Detection.UNKNOWN or not body.startswith(_REPLY_PREFIX):
             return
         self._result = Detection.SUPPORTED
-        self.reply = "\x1b]" + body.decode("ascii") + terminator.decode("ascii")
+        try:
+            text = body.decode("ascii")
+        except UnicodeDecodeError:
+            self.reply = None
+            return
+        self.reply = "\x1b]" + text + terminator.decode("ascii")
 
 
 def _write(sequence: str, stream: Any, enabled: bool | None) -> bool:
