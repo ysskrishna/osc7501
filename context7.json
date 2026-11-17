@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/ysskrishna/osc7501",
+  "public_key": "pk_VesXVq9WjBT8ecKU9XIZz",
   "projectTitle": "osc7501",
   "description": "Zero-dependency Python library that reports a terminal program's status (idle, working, blocked, done, error) with the OSC 7501 escape sequence, with helpers, a Job context manager and terminal feature detection.",
   "excludeFolders": [
