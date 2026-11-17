@@ -6,6 +6,8 @@
 ![Tests](https://github.com/ysskrishna/osc7501/actions/workflows/test.yml/badge.svg)
 [![PyPI](https://img.shields.io/pypi/v/osc7501)](https://pypi.org/project/osc7501/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/osc7501?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREY&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/osc7501)
+[![Context7](https://img.shields.io/badge/Context7-docs-18181B)](https://context7.com/ysskrishna/osc7501)
+[![Ask DeepWiki](https://img.shields.io/badge/DeepWiki-ask-18181B)](https://deepwiki.com/ysskrishna/osc7501)
 
 Report terminal program status with OSC 7501.
 
