@@ -1,0 +1,32 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "osc7501",
+  "description": "Zero-dependency Python library that reports a terminal program's status (idle, working, blocked, done, error) with the OSC 7501 escape sequence, with helpers, a Job context manager and terminal feature detection.",
+  "excludeFolders": [
+    "archive",
+    "archived",
+    "old",
+    "deprecated",
+    "legacy",
+    "tests",
+    ".github"
+  ],
+  "excludeFiles": [
+    "CHANGELOG.md",
+    "changelog.md",
+    "LICENSE.md",
+    "license.md",
+    "CODE_OF_CONDUCT.md",
+    "NEWS.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "AGENTS.md"
+  ],
+  "rules": [
+    "Install with pip install osc7501 (Python 3.11+) and import helpers from osc7501: working, blocked, done, error, idle, clear, encode, detect.",
+    "Reports are written to stderr only when it is a terminal; helpers return True only when bytes were written.",
+    "Each report replaces the terminal's record, so repeat app, id and title on every report you still want shown.",
+    "Call detect() before reading user input; it reads /dev/tty and can consume keystrokes typed during the wait.",
+    "For kind=\"auth\", msg is the prompt text, never the secret."
+  ]
+}
