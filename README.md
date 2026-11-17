@@ -3,9 +3,10 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/ysskrishna/osc7501/blob/main/LICENSE)
-![Tests](https://github.com/ysskrishna/osc7501/actions/workflows/test.yml/badge.svg)
+[![Tests](https://github.com/ysskrishna/osc7501/actions/workflows/test.yml/badge.svg)](https://github.com/ysskrishna/osc7501/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/osc7501)](https://pypi.org/project/osc7501/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/osc7501?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREY&right_color=BLUE&left_text=downloads)](https://pepy.tech/projects/osc7501)
+[![Author site](https://img.shields.io/badge/author-ysskrishna.space-informational)](https://ysskrishna.space)
 [![Context7](https://img.shields.io/badge/Context7-docs-18181B)](https://context7.com/ysskrishna/osc7501)
 [![Ask DeepWiki](https://img.shields.io/badge/DeepWiki-ask-18181B)](https://deepwiki.com/ysskrishna/osc7501)
 
@@ -105,9 +106,13 @@ Which terminals show a report is tracked in the [awesome-osc7501 matrix](https:/
 - [Jonah Snider](https://github.com/jonahsnider), for [osc-status](https://github.com/jonahsnider/osc-status)
 - [Adam Duke](https://github.com/adamvduke), for [pst](https://github.com/adamvduke/pst)
 
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](https://github.com/ysskrishna/osc7501/blob/main/CONTRIBUTING.md) for details.
+
 ## Built and maintained by
 
-osc7501 is built and maintained by:
+OSC 7501 is built and maintained by:
 
 | | Name | GitHub | Role |
 |---|------|--------|------|
@@ -115,30 +120,27 @@ osc7501 is built and maintained by:
 
 ## Changelog
 
-See [CHANGELOG.md](https://github.com/ysskrishna/osc7501/blob/main/CHANGELOG.md) for a detailed list of changes and version history.
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](https://github.com/ysskrishna/osc7501/blob/main/CONTRIBUTING.md) for details.
+See [CHANGELOG](CHANGELOG.md) for release history.
 
 ## Support
 
 If you find this library helpful:
 
 - ⭐ Star the repository
-- 🐛 Report issues
+- 🐛 [Report issues](https://github.com/ysskrishna/osc7501/issues)
 - 🔀 Submit pull requests
 - 💝 [Sponsor on GitHub](https://github.com/sponsors/ysskrishna)
 
 ## License
 
-MIT © [Y. Siva Sai Krishna](https://github.com/ysskrishna) - see [LICENSE](https://github.com/ysskrishna/osc7501/blob/main/LICENSE) file for details.
+MIT © [Y. Siva Sai Krishna](https://github.com/ysskrishna) — see [LICENSE](LICENSE) for details.
 
 ---
 
 <p align="left">
   <a href="https://github.com/ysskrishna">Author's GitHub</a> •
   <a href="https://linkedin.com/in/ysskrishna">Author's LinkedIn</a> •
-  <a href="https://github.com/ysskrishna/osc7501/issues">Report Issues</a> •
-  <a href="https://pypi.org/project/osc7501/">Package on PyPI</a>
+  <a href="https://ysskrishna.space">Author's site</a> •
+  <a href="https://pypi.org/project/osc7501/">Package on PyPI</a> •
+  <a href="https://github.com/ysskrishna/osc7501/issues">Report Issues</a>
 </p>
